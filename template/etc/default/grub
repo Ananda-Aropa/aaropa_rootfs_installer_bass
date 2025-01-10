@@ -2,3 +2,5 @@ _GRUB_THEMES_DIR=$(find /tmp -mindepth 1 -maxdepth 1 -type d -iname "calamares-r
 
 GRUB_THEME=$(find "$_GRUB_THEMES_DIR" -mindepth 1 -maxdepth 2 -type f -name "theme.txt" -print -quit || :)
 GRUB_BACKGROUND=$(find "$_GRUB_THEMES_DIR" -mindepth 1 -maxdepth 2 -type f -name "background.png" -print -quit || :)
+GRUB_GFXMODE=1024x768
+GRUB_GFXPAYLOAD_LINUX=auto
