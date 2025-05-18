@@ -13,6 +13,7 @@
 		<Program icon="l3afpad.png" label="L3afpad">l3afpad</Program>
 		<Program icon="system-file-manager-symbolic.svg" label="PCManFM">pcmanfm</Program>
 		<Program icon="qterminal.png" label="QTerminal">qterminal</Program>
+		<Program icon="video-display.svg" label="LXRandR">lxrandr</Program>
 		<Separator/>
 		<Restart label="Reload JWM" icon="reload"/>
 		<Exit label="Exit JWM" confirm="true" icon="exit"/>        
@@ -101,6 +102,7 @@
 		 IconPath can be listed multiple times to allow searching
 		 for icons in multiple paths.
 	  -->
+	<IconPath>/usr/share/icons/Adwaita/scalable/devices</IconPath>
 	<IconPath>/usr/share/icons/gnome/256x256/actions</IconPath>
 	<IconPath>/usr/share/icons/gnome/256x256/apps</IconPath>
 	<IconPath>/usr/share/icons/gnome/256x256/categories</IconPath>
