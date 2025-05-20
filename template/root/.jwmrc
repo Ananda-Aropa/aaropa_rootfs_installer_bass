@@ -13,7 +13,7 @@
 		<Program icon="l3afpad.png" label="L3afpad">l3afpad</Program>
 		<Program icon="system-file-manager-symbolic.svg" label="PCManFM">pcmanfm</Program>
 		<Program icon="qterminal.png" label="QTerminal">qterminal</Program>
-		<Program icon="video-display.svg" label="LXRandR">lxrandr</Program>
+		<Program icon="/etc/bliss/video-display.svg" label="LXRandR">lxrandr</Program>
 		<Separator/>
 		<Restart label="Reload JWM" icon="reload"/>
 		<Exit label="Exit JWM" confirm="true" icon="exit"/>        
