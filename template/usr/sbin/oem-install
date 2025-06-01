@@ -1,0 +1,252 @@
+#!/bin/bash
+
+# shellcheck disable=SC2013
+for c in $(cat /proc/cmdline); do
+	case "$c" in
+	*=*) eval "export $(echo "${c%%=*}" | sed -r "s/_/__/g;s/./_/g")='${c##+=}'" ;;
+	*) ;;
+	esac
+done
+
+if [ -z "$OEM" ]; then
+	echo "OEM is not set. Exiting." >&2
+	exit 0
+fi
+
+i=0
+IFS=,
+for prop in $OEM; do
+	case "$i" in
+	0) device="${prop:-auto}" ;;    # auto, or <disk/partition>
+	1) fs="${prop:-ext4}" ;;        # ext4, btrfs, f2fs
+	2) parttable="${prop:-auto}" ;; # auto, gpt, mbr/msdos
+	3) bootmode="${prop:-auto}" ;;  # auto, uefi, bios/legacy
+	4) ota_ready="${prop:-true}" ;; # true, false
+	5) data_fs="${prop:-none}" ;;   # none, ext4, btrfs, f2fs
+	*) cmdline="$cmdline$prop " ;;  # additional kernel command line parameters
+	esac
+	i=$((i + 1))
+done
+
+if [ "$device" = "auto" ]; then
+	# Find the first available disk
+	for dev in /dev/[hmnsvx][dmrv][0-9a-z]*; do
+		[ -b "$dev" ] && device="$dev" && break
+	done
+
+	if [ "$device" = auto ]; then
+		echo "ERROR: No disk found. Exiting." >&2
+		exit 1
+	fi
+
+	device_type=disk
+else
+	device=/dev/"${device##*/}"
+
+	# Check if the specified device exists
+	if [ ! -b "$device" ]; then
+		echo "ERROR: Specified device '$device' does not exist." >&2
+		exit 1
+	fi
+
+	if blkid "$device" | grep -q "PTUUID="; then
+		device_type=disk
+	else
+		device_type=part
+	fi
+fi
+
+if [[ "ext4 btrfs f2fs" != *"$fs"* ]]; then
+	echo -e "ERROR: Unsupported filesystem '$fs'.\nSupported filesystems are: ext4, btrfs, f2fs." >&2
+	exit 1
+fi
+
+if [[ "gpt mbr msdos auto" != *"$parttable"* ]]; then
+	echo -e "ERROR: Unsupported partition table type '$parttable'.\nSupported types are: gpt, mbr, msdos, none, auto." >&2
+	exit 1
+fi
+
+if [ "$parttable" == mbr ]; then
+	parttable="msdos"
+fi
+
+if [[ "uefi bios legacy auto" != *"$bootmode"* ]]; then
+	echo -e "ERROR: Unsupported boot mode '$bootmode'.\nSupported modes are: uefi, bios, legacy, auto." >&2
+	exit 1
+fi
+
+if [ "$bootmode" == bios ]; then
+	bootmode="legacy"
+fi
+
+if [[ "true false" != *"$ota_ready"* ]]; then
+	echo -e "ERROR: OTA mode must be true or false, not '$ota_ready'." >&2
+	exit 1
+fi
+
+format_copy() {
+	echo "Formatting partition $1 with $fs..."
+	mkfs."$fs" "$1" || exit 1
+	mount -t "$fs" -o rw "$1" /mnt || exit 1
+
+	# Copy the files to the partition
+	echo "Copying files to $1..."
+	cp /cdrom/{kernel,{initrd,ramdisk-recovery}.img} /mnt
+	mv /mnt/{ramdisk-,}recovery.img
+	if [ "$ota_ready" = true ]; then
+		cp /source/system.img /mnt/system_a.img
+		dd if=/dev/zero of=/mnt/system_b.img bs=1G count=0 seek=4 status=none
+		mv /mnt/kernel{,_a} && cp /mnt/kernel_{a,b}
+		cp /mnt/initrd{,_a}.img && cp /mnt/ramdisk{,_a}.img
+		dd if=/dev/zero of=/mnt/misc.img bs=1M count=0 seek=10 status=none
+	else
+		cp /cdrom/system.?fs /mnt
+	fi
+	echo "$cmdline" >/mnt/cmdline.txt
+	mkdir -p /mnt/data
+}
+
+# If is partition, format it and put the files in
+if [ "$device_type" = "part" ]; then
+	format_copy "$device"
+	cat <<EOF >"/mnt/${androidboot_bootctrl__bootcfg:="ab.env.cfg"}"
+cmdline="
+	androidboot.slot_suffix=_a
+	androidboot.mode=normal
+"
+EOF
+	exit 0
+fi
+
+if [[ "none ext4 btrfs f2fs" != *"$data_fs"* ]]; then
+	echo -e "ERROR: Unsupported data filesystem '$data_fs'.\nSupported filesystems are: ext4, btrfs, f2fs.\nYou may leave it empty or 'none'." >&2
+	exit 1
+fi
+
+if mount | grep -q efivarfs; then
+	system_is_efi=true
+fi
+
+if [ "$bootmode" = "auto" ]; then
+	if [ "$system_is_efi" = true ]; then
+		bootmode=uefi
+	else
+		bootmode=legacy
+	fi
+fi
+
+if [ "$parttable" = "auto" ]; then
+	if [ "$bootmode" = "uefi" ]; then
+		parttable=gpt
+	else
+		parttable=msdos
+	fi
+fi
+
+parted "$device" -s mklabel "$parttable" || exit 1
+
+if [ "$data_fs" = "none" ]; then
+	end_sector=-1MiB
+else
+	end_sector=10GiB
+fi
+
+case "$bootmode" in
+uefi)
+	parted "$device" -s mkpart primary fat32 0MiB 128MiB || exit 1
+	[ -b "${device}1" ] || prefix=p
+	ROOT="${device}${prefix}2"
+	mkfs.fat -F32 "${device}${prefix}1" || exit 1
+	parted "$device" -s mkpart primary "$fs" 128MiB $end_sector || exit 1
+	format_copy "${device}${prefix}2"
+	mkdir -p /mnt/boot/efi
+	mount "${device}${prefix}1" /mnt/boot/efi || exit 1
+	if [ "$(cat /sys/firmware/efi/fw_platform_size)" = 64 ]; then
+		target=x86_64
+	else
+		target=i386
+	fi
+	grub_args=(
+		--target="$target"
+		--boot-directory=/mnt/boot
+		--efi-directory=/mnt/boot/efi
+		--modules="tpm part_$parttable $fs"
+		--disable-shim-lock # for secureboot support
+		--bootloader-id="BASS"
+	)
+	if [ "$data_fs" != none ]; then
+		data_part="${device}${prefix}3"
+	fi
+	;;
+legacy)
+	parted "$device" -s mkpart primary "$fs" 1MiB $end_sector || exit 1
+	[ -b "${device}1" ] || prefix=p
+	ROOT="${device}${prefix}1"
+	mkfs."$fs" "${device}${prefix}1" || exit 1
+	format_copy "${device}${prefix}1"
+	mkdir -p /mnt/boot
+	grub_args=(
+		--target=i386-pc
+		--boot-directory=/mnt/boot
+		--modules="part_$parttable $fs"
+		"$device"
+	)
+	if [ "$data_fs" != none ]; then
+		data_part="${device}${prefix}2"
+	fi
+	;;
+esac
+
+if [ "$data_fs" != "none" ]; then
+	parted "$device" -s mkpart primary "$data_fs" $end_sector 100% || exit 1
+	mkfs."$data_fs" "$data_part" || exit 1
+	# Create fstab
+	mount "$data_part" /mnt/data || exit 1
+	cat <<EOF >/mnt/data/fstab
+\$FS/system\$SLOT.img						system\$SLOT
+\$FS/kernel\$SLOT							kernel\$SLOT
+\$FS/initrd\$SLOT.img						initrd\$SLOT
+\$FS/recovery\$SLOT.img					recovery\$SLOT
+\$FS/misc.img							misc
+$(/usr/share/calamares/scripts/genfstab -U /mnt)
+$([ "$bootmode" = "uefi" ] && echo "none /sys/firmware/efi/efivars efivarfs defaults defaults 0 0") 
+EOF
+	umount /mnt/data
+	rm -r /mnt/data
+fi
+
+# Install GRUB
+if ! grub-install "${grub_args[@]}"; then
+	echo "ERROR: GRUB installation failed." >&2
+	exit 1
+fi
+
+cp /usr/share/calamares/scripts/10_blissos /etc/grub.d/10_linux
+sed -i -r 's/(GRUB_DEVICE(_BOOT)?)=.*$/\1=\$\1/g' /sbin/grub-mkconfig
+cat <<EOF >>/etc/default/grub
+GRUB_TIMEOUT=10
+GRUB_TIMEOUT_STYLE=menu
+GRUB_DISTRIBUTOR=Bass
+GRUB_GFXPAYLOAD_LINUX=keep
+GRUB_DISABLE_OS_PROBER=false
+GRUB_DEFAULT=saved
+GRUB_SAVEDEFAULT=true
+GRUB_DEVICE_BOOT=${ROOT}
+EOF
+
+if ! grub-mkconfig -o /mnt/boot/grub/grub.cfg; then
+	echo "ERROR: GRUB configuration generation failed." >&2
+	exit 1
+fi
+
+cp -r /usr/share/grub/themes /mnt/boot/grub
+cat <<EOF >/mnt/boot/grub/android.cfg
+SLOT=_a
+CMDLINE="$cmdline"
+MODE=normal
+EOF
+
+echo "Installation completed successfully."
+echo "Rebooting the system in 30 seconds..."
+sleep 30
+reboot
