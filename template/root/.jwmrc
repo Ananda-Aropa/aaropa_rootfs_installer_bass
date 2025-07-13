@@ -3,7 +3,7 @@
 
 	<!-- The root menu. -->
 	<RootMenu onroot="1" height="22">
-		<Program icon="/etc/bliss/blissos_logo.svg" label="Install Bass OS">calamares</Program>
+		<Program icon="/etc/bliss/bass_logo.svg" label="Install Bass OS">calamares</Program>
 		<Program icon="x-office-document-symbolic.svg" label="README">l3afpad /etc/bliss/readme.txt</Program>
 	<Separator/>
 		<Program icon="gparted.svg" label="GParted">gparted</Program>
@@ -24,7 +24,7 @@
 	<!-- Tray at the bottom. -->
 	<Tray x="0" y="-1" height="30" autohide="off" delay="1000">
 
-		<TrayButton icon="/etc/bliss/blissos_logo.svg" label="Menu">root:1</TrayButton>
+		<TrayButton icon="/etc/bliss/bass_logo.svg" label="Menu">root:1</TrayButton>
 		<Spacer width="4"/>
 
 		<Pager labeled="true"/>
