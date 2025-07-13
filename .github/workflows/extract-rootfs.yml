@@ -121,7 +121,7 @@ jobs:
       - name: List Files
         run: ls -R ${{ steps.download-rootfs.outputs.download-path }}
 
-      - uses: "softprops/action-gh-release@v2.1.0"
+      - uses: "softprops/action-gh-release@v2.3.2"
         with:
           token: "${{ secrets.RELEASE_TOKEN }}"
           prerelease: false
