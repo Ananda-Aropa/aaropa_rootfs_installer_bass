@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Copy grub2 theme
-cp -r /usr/share/grub/themes /iso/boot/grub
-cp -r /usr/share/grub/themes /boot/grub
-mkdir -p /boot/grub/themes /usr/share/grub/themes
-found_themes="$(find /iso/boot/grub/themes -mindepth 1 -maxdepth 1 -type d -print -quit)"
+# # Copy grub2 theme
+# cp -r /usr/share/grub/themes /iso/boot/grub
+# cp -r /usr/share/grub/themes /boot/grub
+# mkdir -p /boot/grub/themes /usr/share/grub/themes
+# found_themes="$(find /iso/boot/grub/themes -mindepth 1 -maxdepth 1 -type d -print -quit)"
 
 # Generate a grub-rescue iso so we can use it as the base for the iso
+# --themes="$found_themes" \
 grub-mkrescue \
-  --themes="$found_themes" \
-  -o /grub-rescue.iso \
-  /iso
+	-o /grub-rescue.iso \
+	/iso
 rm -rf /iso
 
 # Generate initrd template
@@ -20,9 +20,9 @@ ln -st /initrd_lib usr/{bin,lib,lib64}
 # Copy binaries and libraries
 find_dep() { ldd "$1" | awk '{print $3}' | xargs; }
 for b in mount.ntfs-3g dmidecode; do
-  b=$(which $b)
-  cp -t /initrd_lib/bin $b
-  cp -t /initrd_lib/lib $(find_dep "$b")
+	b=$(which $b)
+	cp -t /initrd_lib/bin $b
+	cp -t /initrd_lib/lib $(find_dep "$b")
 done
 
 # Busybox is explicitly handled
