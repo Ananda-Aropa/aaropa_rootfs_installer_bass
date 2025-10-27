@@ -74,25 +74,25 @@ jobs:
           echo "arch=$(dpkg --print-architecture)" >> "$GITHUB_OUTPUT"
 
       - name: Upload install.sfs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: install.sfs
           path: install.sfs
 
       - name: Upload initrd_lib.tar.gz
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: initrd_lib.tar.gz
           path: initrd_lib.tar.gz
 
       - name: Upload grub-rescue.iso
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: grub-rescue.iso
           path: grub-rescue.iso
 
       - name: Upload boot_hybrid.img
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: boot_hybrid.img
           path: boot_hybrid.img
