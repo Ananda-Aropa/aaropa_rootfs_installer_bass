@@ -54,6 +54,8 @@ arm64) ARCH=aarch64 ;;
 *) ;;
 esac
 
+ARCH=${ARCH//_/-}
+
 # Generate root template
 mkdir -p /install_lib/usr/{bin,lib,share}
 ln -s bin /install_lib/usr/sbin
@@ -96,15 +98,17 @@ B+=(
 )
 
 get_next_readlink() {
+	if [ ! -h "$1" ]; then
+		export RETURN=$1
+		return
+	fi
+
 	local next
 	next=$(readlink "$1")
 	case "$next" in
 	/*) ;;
-	*)
-		cd $(dirname "$1")
-		next=$(pwd)/$next
-		cd -
-		;;
+	'') next=$1 ;;
+	*) next=$(dirname "$1")/$next ;;
 	esac
 	export RETURN=$next
 }
