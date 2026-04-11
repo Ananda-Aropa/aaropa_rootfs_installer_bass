@@ -19,19 +19,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build Docker Image
         run: |
           docker build -f Dockerfile . -t devuan
 
-      - name: Extract RootFS & generate install.sfs & initrd_lib.tar.gz
+      - name: Extract RootFS & generate install.sfs & initrd_lib.tar.gz & install_lib.tar.gz
         run: |
           # Create Docker image
           docker create --name devuan devuan echo "Devuan"
@@ -52,6 +52,9 @@ jobs:
           # Copy initrd_lib.tar.gz
           cp install/initrd_lib.tar.gz .
 
+          # Copy install_lib.tar.gz
+          cp install/install_lib.tar.gz .
+
           # Change ownership of install/ to 0:0
           sudo chown -R 0:0 install
 
@@ -60,12 +63,12 @@ jobs:
           sudo chmod 4754 install/usr/lib/dbus-1.0/dbus-daemon-launch-helper
 
           # Create install.sfs
-          sudo rm -rf install/initrd_lib*
+          sudo rm -rf install/initrd_lib* install/install_lib*
           sudo mksquashfs install install.sfs -noappend -comp zstd
           sudo chmod 755 install.sfs
 
           # Clean up
-          sudo rm -rf docker_busybox rootfs_busybox.tar.gz install initrd_lib
+          sudo rm -rf docker_busybox rootfs_busybox.tar.gz install initrd_lib install_lib
           docker rm devuan
 
       - name: Set Vars
@@ -74,25 +77,31 @@ jobs:
           echo "arch=$(dpkg --print-architecture)" >> "$GITHUB_OUTPUT"
 
       - name: Upload install.sfs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: install.sfs
           path: install.sfs
 
       - name: Upload initrd_lib.tar.gz
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: initrd_lib.tar.gz
           path: initrd_lib.tar.gz
 
+      - name: Upload install_lib.tar.gz
+        uses: actions/upload-artifact@v7
+        with:
+          name: install_lib.tar.gz
+          path: install_lib.tar.gz
+
       - name: Upload grub-rescue.iso
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: grub-rescue.iso
           path: grub-rescue.iso
 
       - name: Upload boot_hybrid.img
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: boot_hybrid.img
           path: boot_hybrid.img
@@ -104,7 +113,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup variables
         run: |
@@ -112,7 +121,7 @@ jobs:
 
       - name: Download RootFS
         id: download-rootfs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: out
           pattern: "*"
@@ -121,7 +130,7 @@ jobs:
       - name: List Files
         run: ls -R ${{ steps.download-rootfs.outputs.download-path }}
 
-      - uses: "softprops/action-gh-release@v2.1.0"
+      - uses: softprops/action-gh-release@v2
         with:
           token: "${{ secrets.RELEASE_TOKEN }}"
           prerelease: false
