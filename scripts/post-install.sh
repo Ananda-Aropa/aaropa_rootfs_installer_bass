@@ -48,6 +48,12 @@ tar -czvf /initrd_lib.tar.gz /initrd_lib
 
 ARCH=$(dpkg --print-architecture)
 
+case "$ARCH" in
+amd64) ARCH=x86_64 ;;
+arm64) ARCH=aarch64 ;;
+*) ;;
+esac
+
 # Generate root template
 mkdir -p /install_lib/usr/{bin,lib,share}
 ln -s bin /install_lib/usr/sbin
@@ -76,35 +82,50 @@ declare -a B=(
 # BTRFS is not included due to not supporting booting sparse files
 B+=(
 	mkfs
-	mkfs.ext4
+	mke2fs
 	mkfs.f2fs
 	mkfs.fat
 	mkfs.exfat
 	mkfs.ntfs
 	fsck
-	fsck.ext4
+	e2fsck
 	fsck.f2fs
 	fsck.fat
 	fsck.exfat
 	fsck.ntfs
 )
 
+get_next_readlink() {
+	local next
+	next=$(readlink "$1")
+	case "$next" in
+	/*) ;;
+	*)
+		cd $1
+		next=$(pwd)/$next
+		cd -
+		;;
+	esac
+	export RETURN=$next
+}
+
 for b in "${B[@]}"; do
 	b=$(readlink -f "$(which "$b")")
 	cp -t /install_lib/bin "$b"
 	for dep in $(find_dep "$b"); do
 		_l=$dep
-		_l_next=$(readlink "$_l")
-		while [ "$_l_next" != "$_l" ]; do
+		get_next_readlink "$_l"
+		while [ "$RETURN" != "$_l" ]; do
 			cp -t /install_lib/lib "$_l"
-			_l=$_l_next
-			_l_next=$(readlink "$_l")
+			_l="$RETURN"
+			get_next_readlink "$_l"
 		done
-		cp -t /install_lib/lib "$_l_next"
+		cp -t /install_lib/lib "$RETURN"
 	done
 done
 
 # Expand links for filesystems
+ln -s mke2fs /install_lib/bin/mkfs.ext4
 ln -s mkfs.ext4 /install_lib/bin/mkfs.ext3
 ln -s mkfs.ext4 /install_lib/bin/mkfs.ext2
 
@@ -112,9 +133,9 @@ ln -s mkfs.fat /install_lib/bin/mkfs.vfat
 ln -s mkfs.fat /install_lib/bin/mkfs.msdos
 ln -s mkfs.fat /install_lib/bin/mkdosfs
 
+ln -s e2fsck /install_lib/bin/fsck.ext4
 ln -s fsck.ext4 /install_lib/bin/fsck.ext3
 ln -s fsck.ext4 /install_lib/bin/fsck.ext2
-ln -s fsck.ext4 /install_lib/bin/e2fsck
 
 ln -s fsck.fat /install_lib/bin/fsck.vfat
 ln -s fsck.fat /install_lib/bin/fsck.msdos
@@ -127,7 +148,7 @@ cp -rt /install_lib/usr/share /usr/share/grub
 # Linker
 cp -t /install_lib/bin /bin/ld.so
 cp -t /install_lib/lib /usr/lib/*/ld-linux-${ARCH}.so.*
-cp -t /initrd_lib/lib64 /usr/lib64/ld-linux-x86-64.so.*
+cp -t /initrd_lib/lib64 /usr/lib64/ld-linux-${ARCH}.so.*
 
 # Wrap initrd up
 tar -czvf /install_lib.tar.gz /install_lib
