@@ -94,8 +94,10 @@ for b in "${B[@]}"; do
 	cp -t /install_lib/bin "$b"
 	for dep in $(find_dep "$b"); do
 		_l=$dep
-		while [ "$(readlink "$_l")" == "$_l" ]; do
+		_l_next=$(readlink "$_l")
+		while [ "$_l_next" == "$_l" ]; do
 			cp -t /install_lib/lib "$_l"
+			_l=$_l_next
 		done
 	done
 done
