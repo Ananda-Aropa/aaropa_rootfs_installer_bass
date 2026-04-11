@@ -92,7 +92,12 @@ B+=(
 for b in "${B[@]}"; do
 	b=$(readlink -f "$(which "$b")")
 	cp -t /install_lib/bin "$b"
-	cp -rnt /install_lib/lib $(find_dep "$b")
+	for dep in $(find_dep "$b"); do
+		_l=$dep
+		while [ "$(readlink "$_l")" == "$_l" ]; do
+			cp -t /install_lib/lib "$_l"
+		done
+	done
 done
 
 # Expand links for filesystems
@@ -111,13 +116,14 @@ ln -s fsck.fat /install_lib/bin/fsck.vfat
 ln -s fsck.fat /install_lib/bin/fsck.msdos
 
 # Specical packages
-cp -t /install_lib/lib /usr/lib/grub
+cp -rt /install_lib/lib /usr/lib/grub
 ln -s grub /install_lib/usr/lib/grub2
-cp -t /install_lib/usr/share /usr/share/grub
+cp -rt /install_lib/usr/share /usr/share/grub
 
 # Linker
 cp -t /install_lib/bin /bin/ld.so
 cp -t /install_lib/lib /usr/lib/*/ld-linux-${ARCH}.so.*
+cp -t /initrd_lib/lib64 /usr/lib64/ld-linux-x86-64.so.*
 
 # Wrap initrd up
 tar -czvf /install_lib.tar.gz /install_lib
