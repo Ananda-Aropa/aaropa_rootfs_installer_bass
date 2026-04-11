@@ -58,6 +58,7 @@ ln -st /install_lib usr/{{s,}bin,lib{,64}}
 # Copy binaries and libraries
 declare -a B=(
 	/usr/share/bliss/busybox
+	bash
 	fdisk
 	cfdisk
 	sfdisk
