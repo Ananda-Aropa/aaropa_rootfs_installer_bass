@@ -58,7 +58,7 @@ esac
 mkdir -p /install_lib/usr/{bin,lib,share}
 ln -s bin /install_lib/usr/sbin
 ln -s lib /install_lib/usr/lib64
-ln -s . /install_lib/lib/${ARCH}-linux-gnu
+ln -s . /install_lib/usr/lib/${ARCH}-linux-gnu
 ln -st /install_lib usr/{{s,}bin,lib{,64}}
 
 # Copy binaries and libraries
@@ -101,7 +101,7 @@ get_next_readlink() {
 	case "$next" in
 	/*) ;;
 	*)
-		cd $1
+		cd $(dirname "$1")
 		next=$(pwd)/$next
 		cd -
 		;;
@@ -111,16 +111,16 @@ get_next_readlink() {
 
 for b in "${B[@]}"; do
 	b=$(readlink -f "$(which "$b")")
-	cp -t /install_lib/bin "$b"
+	cp -t /install_lib/usr/bin "$b"
 	for dep in $(find_dep "$b"); do
 		_l=$dep
 		get_next_readlink "$_l"
 		while [ "$RETURN" != "$_l" ]; do
-			cp -t /install_lib/lib "$_l"
+			cp -t /install_lib/usr/lib "$_l"
 			_l="$RETURN"
 			get_next_readlink "$_l"
 		done
-		cp -t /install_lib/lib "$RETURN"
+		cp -t /install_lib/usr/lib "$RETURN"
 	done
 done
 
@@ -148,7 +148,7 @@ cp -rt /install_lib/usr/share /usr/share/grub
 # Linker
 cp -t /install_lib/bin /bin/ld.so
 cp -t /install_lib/lib /usr/lib/*/ld-linux-${ARCH}.so.*
-cp -t /initrd_lib/lib64 /usr/lib64/ld-linux-${ARCH}.so.*
+cp -t /initrd_lib/lib64 /usr/lib64/ld-linux-${ARCH}.so.* # In case the command above fails
 
 # Wrap initrd up
 tar -czvf /install_lib.tar.gz /install_lib
