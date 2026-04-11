@@ -95,10 +95,12 @@ for b in "${B[@]}"; do
 	for dep in $(find_dep "$b"); do
 		_l=$dep
 		_l_next=$(readlink "$_l")
-		while [ "$_l_next" == "$_l" ]; do
+		while [ "$_l_next" != "$_l" ]; do
 			cp -t /install_lib/lib "$_l"
 			_l=$_l_next
+			_l_next=$(readlink "$_l")
 		done
+		cp -t /install_lib/lib "$_l_next"
 	done
 done
 
