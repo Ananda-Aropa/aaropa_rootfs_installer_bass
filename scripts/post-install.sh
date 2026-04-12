@@ -150,8 +150,8 @@ for b in "${B[@]}"; do
 	for dep in $(find_dep "$b"); do
 		_l=$dep
 		get_next_readlink "$_l"
-		while [ "$RETURN" != "$_l" ]; do
-			cp -t /install_lib/usr/lib "$_l"
+		while [ -h "$_l" ]; do
+			ln -s "$(basename "$RETURN")" "/install_lib/usr/lib/$(basename "$_l")"
 			_l="$RETURN"
 			get_next_readlink "$_l"
 		done
