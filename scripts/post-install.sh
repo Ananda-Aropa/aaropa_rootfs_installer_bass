@@ -100,6 +100,7 @@ B+=(
 
 # GRUB
 B+=(
+	gettext
 	grub-bios-setup
 	grub-editenv
 	grub-file
