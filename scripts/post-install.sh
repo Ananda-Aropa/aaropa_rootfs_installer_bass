@@ -57,7 +57,7 @@ esac
 ARCH=${ARCH//_/-}
 
 # Generate root template
-mkdir -p /install_lib/usr/{bin,lib,share}
+mkdir -p /install_lib/{etc/grub.d,usr/{bin,lib,share}}
 ln -s bin /install_lib/usr/sbin
 ln -s lib /install_lib/usr/lib64
 ln -s . /install_lib/usr/lib/${ARCH}-linux-gnu
@@ -180,10 +180,9 @@ ln -s fsck.fat /install_lib/bin/fsck.msdos
 cp -rt /install_lib/lib /usr/lib/grub
 ln -s grub /install_lib/usr/lib/grub2
 cp -rt /install_lib/usr/share /usr/share/grub
+cp -rt /install_lib/etc/grub.d /etc/grub.d/{00_header,25_bli,30_os-prober,40_custom,41_custom}
 # os-prober
-cp -rt /install_lib/lib /usr/lib/os-prober
-cp -rt /install_lib/lib /usr/lib/os-probes
-cp -rt /install_lib/lib /usr/lib/linux-boot-probes
+cp -rt /install_lib/lib /usr/lib/{os-prober,os-probes,linux-boot-probes}
 cp -rt /install_lib/usr/share /usr/share/os-prober
 
 # Linker
