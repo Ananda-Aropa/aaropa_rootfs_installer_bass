@@ -74,7 +74,6 @@ declare -a B=(
 	sgdisk
 	dialog
 	efibootmgr
-	grub-install
 	pv
 	tune2fs
 	dmidecode
@@ -97,6 +96,36 @@ B+=(
 	fsck.fat
 	fsck.exfat
 	fsck.ntfs
+)
+
+# GRUB
+B+=(
+	grub-bios-setup
+	grub-editenv
+	grub-file
+	grub-fstest
+	grub-glue-efi
+	grub-install
+	grub-kbdcomp
+	grub-macbless
+	grub-menulst2cfg
+	grub-mkconfig
+	grub-mkfont
+	grub-mkimage
+	grub-mklayout
+	grub-mknetdir
+	grub-mkpasswd-pbkdf2
+	grub-mkrelpath
+	grub-mkrescue
+	grub-mkstandalone
+	grub-mount
+	grub-ofpathname
+	grub-probe
+	grub-protect
+	grub-reboot
+	grub-render-label
+	grub-script-check
+	grub-set-default
 )
 
 get_next_readlink() {
