@@ -78,6 +78,8 @@ declare -a B=(
 	pv
 	tune2fs
 	dmidecode
+	linux-boot-prober
+	os-prober
 )
 
 # Filesystem support
@@ -145,9 +147,15 @@ ln -s fsck.fat /install_lib/bin/fsck.vfat
 ln -s fsck.fat /install_lib/bin/fsck.msdos
 
 # Specical packages
+# grub
 cp -rt /install_lib/lib /usr/lib/grub
 ln -s grub /install_lib/usr/lib/grub2
 cp -rt /install_lib/usr/share /usr/share/grub
+# os-prober
+cp -rt /install_lib/lib /usr/lib/os-prober
+cp -rt /install_lib/lib /usr/lib/os-probes
+cp -rt /install_lib/lib /usr/lib/linux-boot-probes
+cp -rt /install_lib/usr/share /usr/share/os-prober
 
 # Linker
 cp -t /install_lib/bin /bin/ld.so
