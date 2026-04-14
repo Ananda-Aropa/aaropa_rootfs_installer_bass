@@ -185,6 +185,9 @@ cp -rt /install_lib/etc/grub.d /etc/grub.d/{00_header,25_bli,30_os-prober,40_cus
 # os-prober
 cp -rt /install_lib/lib /usr/lib/{os-prober,os-probes,linux-boot-probes}
 cp -rt /install_lib/usr/share /usr/share/os-prober
+# ncurses
+cp -rt /install_lib/usr/share /usr/share/terminfo
+cp -rt /install_lib/lib /usr/lib/terminfo
 
 # Linker
 cp -t /install_lib/bin /bin/ld.so
