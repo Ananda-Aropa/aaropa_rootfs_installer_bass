@@ -189,6 +189,9 @@ cp -rt /install_lib/usr/share /usr/share/os-prober
 cp -rt /install_lib/usr/share /usr/share/terminfo
 cp -rt /install_lib/lib /usr/lib/terminfo
 
+# Patch grub-mkconfig
+sed -i 's|--target=device /|--target=device /hd/|g' /install_lib/bin/grub-mkconfig
+
 # Linker
 cp -t /install_lib/bin /bin/ld.so
 cp -t /install_lib/lib /usr/lib/*/ld-linux-${ARCH}.so.*
