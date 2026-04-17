@@ -2,16 +2,16 @@
 # shellcheck disable=SC2046
 
 # # Copy grub2 theme
-# cp -r /usr/share/grub/themes /iso/boot/grub
+cp -r /usr/share/grub/themes /iso/boot/grub
 # cp -r /usr/share/grub/themes /boot/grub
 # mkdir -p /boot/grub/themes /usr/share/grub/themes
 # found_themes="$(find /iso/boot/grub/themes -mindepth 1 -maxdepth 1 -type d -print -quit)"
 
 # Generate a grub-rescue iso so we can use it as the base for the iso
-# --themes="$found_themes" \
 grub-mkrescue \
-	-o /grub-rescue.iso \
-	/iso
+  --themes="$(find /iso/boot/grub/themes -mindepth 1 -maxdepth 1 -type d -print -quit)" \
+  -o /grub-rescue.iso \
+  /iso
 rm -rf /iso
 
 ##############
