@@ -79,6 +79,7 @@ declare -a B=(
 	dmidecode
 	linux-boot-prober
 	os-prober
+	logger
 )
 
 # Filesystem support
